@@ -19,7 +19,9 @@ function SlimJS (port, arrayOfSearchPaths) {
   const tcpSlimServer = new SlimTcpServer(port, onReceivedInstructionSet)
 
   tcpSlimServer.setOnInstructionArrived(onReceivedInstructionSet)
-  tcpSlimServer.start()
+  start(function () {
+    tcpSlimServer.start()
+  })
 
   function onReceivedInstructionSet (instructionSet) {
     const returnValues = []
@@ -27,7 +29,7 @@ function SlimJS (port, arrayOfSearchPaths) {
     let currentInstructionIndex = 0
 
     if (instructionSet === BYE) {
-      return exit(() => {
+      return finish(() => {
         tcpSlimServer.writeResult(returnValues)
         process.exit(0)
       })
@@ -42,7 +44,6 @@ function SlimJS (port, arrayOfSearchPaths) {
 
       if (wasLastInstructionExecuted(result)) {
         tcpSlimServer.writeResult(returnValues)
-        // onFinalInstructionExecuted(returnValues);
       } else {
         executeInstruction(
           instructionSet[currentInstructionIndex],
@@ -62,16 +63,38 @@ function SlimJS (port, arrayOfSearchPaths) {
     statementExecutor[command](instructionArguments, cb)
   }
 
-  function exit (cb) {
+  function start (cb) {
     const promises = []
     for (let i = 0; i < arrayOfSearchPaths.length; i++) {
       const jsPath = path.resolve(
-        path.join(arrayOfSearchPaths[i], 'on-exit.js')
+        path.join(arrayOfSearchPaths[i], 'on-start.js')
       )
       if (fileExists(jsPath)) {
-        const result = require(jsPath)()
-        if (utils.isPromise(result)) {
-          promises.push(result.catch(console.error))
+        const mod = require(jsPath)
+        if (typeof mod === 'function') {
+          const result = mod()
+          if (utils.isPromise(result)) {
+            promises.push(result)
+          }
+        }
+      }
+    }
+    Promise.all(promises).then(cb)
+  }
+
+  function finish (cb) {
+    const promises = []
+    for (let i = 0; i < arrayOfSearchPaths.length; i++) {
+      const jsPath = path.resolve(
+        path.join(arrayOfSearchPaths[i], 'on-finish.js')
+      )
+      if (fileExists(jsPath)) {
+        const mod = require(jsPath)
+        if (typeof mod === 'function') {
+          const result = require(jsPath)()
+          if (utils.isPromise(result)) {
+            promises.push(result.catch(console.error))
+          }
         }
       }
     }

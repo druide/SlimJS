@@ -40,37 +40,28 @@ TestCodeLoader.prototype.make = function (name, args, cb) {
   if (!args) args = []
 
   try {
-    var ns = name.split('.')
+    const ns = name.split('.')
 
-    var theType
+    let TheType
 
     for (var v = 0; v < theRequireArrayOfTheTestFixtures.length; v++) {
-      theType = theRequireArrayOfTheTestFixtures[v][ns[0]]
+      TheType = theRequireArrayOfTheTestFixtures[v][ns[0]]
 
       for (var i = 1; i < ns.length; i++) {
-        if (!theType) continue
+        if (!TheType) continue
 
-        theType = theType[ns[i]]
+        TheType = TheType[ns[i]]
       }
 
-      if (theType) break
+      if (TheType) break
     }
 
-    if (!theType) return cb('NO_CLASS ' + name, null)
+    if (!TheType) return cb('NO_CLASS ' + name, null)
 
-    var obj = construct(theType, args)
+    var obj = new TheType(args)
     cb(null, obj)
   } catch (e) {
     cb(Error(e), null)
-  }
-
-  function construct (T) {
-    function F () {
-      return T.apply(this, args)
-    }
-
-    F.prototype = T.prototype
-    return new F()
   }
 }
 

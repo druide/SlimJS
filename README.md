@@ -46,6 +46,22 @@ function Hi(){
 module.exports.Hi = Hi;
 ```
 
+or 
+
+```javascript
+class Hi {
+    setEcho (str){
+        this.echo = str;
+    }
+
+    sayHi () {
+        return "Hi! " + this.echo;
+    }
+}
+
+exports.Hi = Hi;
+```
+
 If you want to do something asynchronous, return a `thenable` (promise): 
 
 ```
@@ -172,16 +188,16 @@ function Json(){
 module.exports.Json=Json;
 ```
 
-Tear down
+Tear up and tear down
 
-To execute function on test session exit, create file "on-exit.js" at fixtures
-path, with exported function. It may return Promise.
+Files "on-start.js" and "on-exit.js" at fixtures path are executed on test session start and finish,
+respectively. To do asynchronous task, export Promise.
 
 ```
-module.exports = function exit () {
+module.exports = function finish () {
   return new Promise(resolve => {
     setTimeout(() => {
-      console.log('Bue!')
+      console.log('Bye!')
       resolve()
     }, 2000)
   })
