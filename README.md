@@ -172,6 +172,22 @@ function Json(){
 module.exports.Json=Json;
 ```
 
+Tear down
+
+To execute function on test session exit, create file "on-exit.js" at fixtures
+path, with exported function. It may return Promise.
+
+```
+module.exports = function exit () {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      console.log('Bue!')
+      resolve()
+    }, 2000)
+  })
+} 
+```
+
 --
 #### For contributors
 

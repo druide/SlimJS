@@ -2,13 +2,16 @@
  * Created by noam on 1/19/16.
  */
 
-function ExecUtils(){
-    this.toException = function (e) {
-        if(e.stack)
-            return "__EXCEPTION__:"+e.stack.toString();
+function toException (e) {
+  if (e.stack) { return '__EXCEPTION__:' + e.stack.toString() }
 
-        return "__EXCEPTION__:message:<<" + e.toString() + ">>";
-    }
+  return '__EXCEPTION__:message:<<' + e.toString() + '>>'
 }
 
-module.exports = ExecUtils;
+function isPromise (obj) {
+  return obj && obj.then && typeof obj.then === 'function' &&
+    obj.catch && typeof obj.catch === 'function'
+}
+
+exports.toException = toException
+exports.isPromise = isPromise

@@ -1,61 +1,89 @@
 #! /usr/bin/env node
 
-var path = require('path'),
-    LOG = require("./utils/LOG").LOG,
-    SlimTcpServer = require("./tcp/SlimTcpServer.js"),
-    StatementExecutor = require("./exec/StatementExecutor.js"),
-    classpath =  process.argv[process.argv.length - 2],
-    arrayOfSearchPaths = classpath.split(path.delimiter),
-    port = process.argv[process.argv.length - 1];
+const path = require('path')
+const fs = require('fs')
+const SlimTcpServer = require('./tcp/SlimTcpServer.js')
+const StatementExecutor = require('./exec/StatementExecutor.js')
+const utils = require('./exec/ExecUtils')
 
-new SlimJS(port,arrayOfSearchPaths);
+const classpath = process.argv[process.argv.length - 2]
+const arrayOfSearchPaths = classpath.split(path.delimiter)
+const port = process.argv[process.argv.length - 1]
+const BYE = 'bye'
 
-var BYE = "bye";
-function SlimJS(port,arrayOfSearchPaths){
-    var statementExecutor = new StatementExecutor(arrayOfSearchPaths);
+SlimJS(port, arrayOfSearchPaths)
 
-    var tcpSlimServer = new SlimTcpServer(port, onReceivedInstructionSet);
+function SlimJS (port, arrayOfSearchPaths) {
+  const statementExecutor = new StatementExecutor(arrayOfSearchPaths)
 
-    tcpSlimServer.setOnInstructionArrived(onReceivedInstructionSet);
-    tcpSlimServer.start();
+  const tcpSlimServer = new SlimTcpServer(port, onReceivedInstructionSet)
 
-    function onReceivedInstructionSet(instructionSet) {
-        var returnValues = [];
+  tcpSlimServer.setOnInstructionArrived(onReceivedInstructionSet)
+  tcpSlimServer.start()
 
-        var currentInstructionIndex = 0;
+  function onReceivedInstructionSet (instructionSet) {
+    const returnValues = []
 
-        if(instructionSet===BYE)
-        {
-            tcpSlimServer.writeResult(returnValues);
-            return process.exit(0);
-        }
+    let currentInstructionIndex = 0
 
-        executeInstruction(instructionSet[0],onInstructionExecutionResult);
-
-        function onInstructionExecutionResult(result) {
-            returnValues.push(result);
-
-            currentInstructionIndex++;
-
-            if (wasLastInstructionExecuted(result))
-                tcpSlimServer.writeResult(returnValues); //onFinalInstructionExecuted(returnValues);
-            else
-                executeInstruction(instructionSet[currentInstructionIndex], onInstructionExecutionResult);
-        }
-
-        function wasLastInstructionExecuted(result) {
-            return result===BYE || currentInstructionIndex === instructionSet.length;
-        }
+    if (instructionSet === BYE) {
+      return exit(() => {
+        tcpSlimServer.writeResult(returnValues)
+        process.exit(0)
+      })
     }
 
-    function executeInstruction(instructionArguments, cb) {
-        var command = instructionArguments[1];
+    executeInstruction(instructionSet[0], onInstructionExecutionResult)
 
-        statementExecutor[command](instructionArguments, cb);
+    function onInstructionExecutionResult (result) {
+      returnValues.push(result)
+
+      currentInstructionIndex++
+
+      if (wasLastInstructionExecuted(result)) {
+        tcpSlimServer.writeResult(returnValues)
+        // onFinalInstructionExecuted(returnValues);
+      } else {
+        executeInstruction(
+          instructionSet[currentInstructionIndex],
+          onInstructionExecutionResult
+        )
+      }
     }
+
+    function wasLastInstructionExecuted (result) {
+      return result === BYE || currentInstructionIndex === instructionSet.length
+    }
+  }
+
+  function executeInstruction (instructionArguments, cb) {
+    const command = instructionArguments[1]
+
+    statementExecutor[command](instructionArguments, cb)
+  }
+
+  function exit (cb) {
+    const promises = []
+    for (let i = 0; i < arrayOfSearchPaths.length; i++) {
+      const jsPath = path.resolve(
+        path.join(arrayOfSearchPaths[i], 'on-exit.js')
+      )
+      if (fileExists(jsPath)) {
+        const result = require(jsPath)()
+        if (utils.isPromise(result)) {
+          promises.push(result.catch(console.error))
+        }
+      }
+    }
+    Promise.all(promises).then(cb)
+  }
+
+  function fileExists (jsPath) {
+    try {
+      fs.accessSync(jsPath, fs.F_OK)
+      return true
+    } catch (e) {
+      return false
+    }
+  }
 }
-
-
-
-
-
