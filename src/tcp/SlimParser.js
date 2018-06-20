@@ -28,7 +28,7 @@ function SlimParser () {
         var a = arrayToSlim(elm)
         result += pad(a.length + 2) + ':[' + a + ']:'
       } else {
-        elm = elm.toString()
+        elm = elm === undefined ? '/__VOID__/' : elm.toString()
         result += pad(elm.length) + ':' + elm + ':'
       }
     }

@@ -53,7 +53,7 @@ function SlimJS (port, arrayOfSearchPaths) {
     }
 
     function wasLastInstructionExecuted (result) {
-      return result === BYE || currentInstructionIndex === instructionSet.length
+      return result === BYE || currentInstructionIndex >= instructionSet.length
     }
   }
 

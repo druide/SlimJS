@@ -56,7 +56,7 @@ function CallExecutor (state) {
         }
 
         cb([id, val])
-      }).catch(err => cb([id, utils.toException(err)]))
+      }).catch(err => { throw err })
     } catch (e) {
       cb([id, utils.toException(e)])
     }
